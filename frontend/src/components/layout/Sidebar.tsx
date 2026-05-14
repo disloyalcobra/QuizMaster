@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth-context';
-import { mediaApi } from '@/lib/api';
+import { mediaApi, usersApi } from '@/lib/api';
 
 /**
  * MENU_ITEMS: Navegación principal del Dashboard.

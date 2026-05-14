@@ -313,6 +313,7 @@ interface IntentRespuesta {
   esCorrecta: boolean;
   puntosObtenidos: number;
   tiempoRespuestaMs?: number;
+  textoAbierta?: string;
   pregunta?: Pregunta;
   respuesta?: Respuesta;
 }
