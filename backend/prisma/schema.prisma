@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// *
+/// * Modelo de Usuario:
+/// * Representa tanto a los creadores de quizzes como a los administradores.
+model Usuario {
+  id              String    @id @default(uuid())
+  nombre          String
+  email           String    @unique
+  passwordHash    String    @map("password_hash")
+  rol             String
+  avatarUrl       String?   @map("avatar_url")
+  emailVerificado Boolean?  @default(false) @map("email_verificado")
+  creadoEn        DateTime? @default(now()) @map("creado_en") @db.Timestamptz(6)
+  ultimoAcceso    DateTime? @map("ultimo_acceso") @db.Timestamptz(6)
+  grupos          Grupo[]
+  intentos        Intento[]
+  quizzes         Quiz[]
+
+  @@map("usuarios")
+}
+
+/// *
+/// * Modelo de Grupo:
+/// * Permite organizar estudiantes bajo un mismo tutor o profesor.
+model Grupo {
+  id          String    @id @default(uuid())
+  nombre      String
+  descripcion String?
+  creadorId   String    @map("creador_id")
+  colorHex    String?   @map("color_hex")
+  icono       String?
+  creadoEn    DateTime? @default(now()) @map("creado_en") @db.Timestamptz(6)
+  creador     Usuario   @relation(fields: [creadorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quizzes     Quiz[]
+
+  @@map("grupos")
+}
+
+/// *
+/// * Modelo de Quiz (Cuestionario):
+/// * El núcleo de la plataforma. Contiene las preguntas y configuración general.
+model Quiz {
+  id            String         @id @default(uuid())
+  titulo        String
+  descripcion   String?
+  autorId       String         @map("autor_id")
+  grupoId       String?        @map("grupo_id")
+  publicUrl     String         @unique @map("public_url")
+  isPublic      Boolean?       @default(false) @map("is_public")
+  estado        String
+  musicaUrl     String?        @map("musica_url")
+  imagenPortada String?        @map("imagen_portada")
+  creadoEn      DateTime?      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  actualizadoEn DateTime?      @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  intentos      Intento[]
+  preguntas     Pregunta[]
+  etiquetas     QuizEtiqueta[]
+  autor         Usuario        @relation(fields: [autorId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  grupo         Grupo?         @relation(fields: [grupoId], references: [id], onUpdate: NoAction)
+
+  @@index([autorId], map: "idx_quizzes_autor")
+  @@index([grupoId], map: "idx_quizzes_grupo")
+  @@map("quizzes")
+}
+
+/// *
+/// * Modelo de Etiqueta (Temas):
+/// * Categorías transversales (Ej: "Matemáticas", "Logística").
+model Etiqueta {
+  id       String         @id @default(uuid())
+  nombre   String         @unique
+  colorHex String?        @map("color_hex")
+  quizzes  QuizEtiqueta[]
+
+  @@map("etiquetas")
+}
+
+/// *
+/// * Tabla intermedia para la relación N:N entre Quizzes y Etiquetas.
+model QuizEtiqueta {
+  quizId     String   @map("quiz_id")
+  etiquetaId String   @map("etiqueta_id")
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([quizId, etiquetaId])
+  @@map("quiz_etiquetas")
+}
+
+/// *
+/// * Modelo de Pregunta:
+/// * Define el contenido y tipo de reto para el estudiante.
+model Pregunta {
+  id                String             @id @default(uuid())
+  quizId            String             @map("quiz_id")
+  texto             String
+  tipoPregunta      String             @map("tipo_pregunta")
+  orden             Int
+  tiempoLimite      Int?               @default(20) @map("tiempo_limite")
+  puntosValor       Int?               @default(100) @map("puntos_valor")
+  imagenUrl         String?            @map("imagen_url")
+  explicacion       String?
+  quiz              Quiz               @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  respuestas        Respuesta[]
+  respuestasIntento RespuestaIntento[]
+
+  @@index([quizId], map: "idx_preguntas_quiz")
+  @@map("preguntas")
+}
+
+/// *
+/// * Modelo de Respuesta:
+/// * Las opciones (correctas e incorrectas) de una pregunta.
+model Respuesta {
+  id                String             @id @default(uuid())
+  preguntaId        String             @map("pregunta_id")
+  texto             String
+  esCorrecta        Boolean?           @default(false) @map("es_correcta")
+  orden             Int
+  color             String?
+  pregunta          Pregunta           @relation(fields: [preguntaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  respuestasIntento RespuestaIntento[]
+
+  @@index([preguntaId], map: "idx_respuestas_pregunta")
+  @@map("respuestas")
+}
+
+/// *
+/// * Modelo de Intento:
+/// * Registra cada vez que alguien completa un cuestionario.
+model Intento {
+  id             String             @id @default(uuid())
+  quizId         String             @map("quiz_id")
+  usuarioId      String?            @map("usuario_id")
+  nombreCompleto String             @map("nombre_completo")
+  puntajeTotal   Int?               @default(0) @map("puntaje_total")
+  numeroIntento  Int?               @default(1) @map("numero_intento")
+  modo           String
+  tiempoTotalSeg Int?               @map("tiempo_total_seg")
+  completado     Boolean?           @default(false)
+  fecha          DateTime?          @default(now()) @db.Timestamptz(6)
+  quiz           Quiz               @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  usuario        Usuario?           @relation(fields: [usuarioId], references: [id], onUpdate: NoAction)
+  respuestas     RespuestaIntento[]
+
+  @@index([quizId], map: "idx_intentos_quiz")
+  @@index([usuarioId], map: "idx_intentos_usuario")
+  @@map("intentos")
+}
+
+/// *
+/// * Detalle de Respuestas por Intento:
+/// * Almacena qué contestó el usuario pregunta por pregunta.
+model RespuestaIntento {
+  id                String     @id @default(uuid())
+  intentoId         String     @map("intento_id")
+  preguntaId        String     @map("pregunta_id")
+  respuestaId       String?    @map("respuesta_id")
+  textoAbierta      String?    @map("texto_abierta")
+  esCorrecta        Boolean    @map("es_correcta")
+  tiempoRespuestaMs Int?       @map("tiempo_respuesta_ms")
+  puntosObtenidos   Int?       @default(0) @map("puntos_obtenidos")
+  intento           Intento    @relation(fields: [intentoId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  pregunta          Pregunta   @relation(fields: [preguntaId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  respuesta         Respuesta? @relation(fields: [respuestaId], references: [id], onUpdate: NoAction)
+
+  @@map("respuestas_intento")
+}
