@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { authApi } from "@/lib/api";
 import { BrainCircuit, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 
 /**
@@ -27,22 +27,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        let errorMsg = "Credenciales inválidas";
-        try {
-          const errData = await response.json();
-          errorMsg = errData.message || errorMsg;
-        } catch {}
-        throw new Error(errorMsg);
-      }
-
-      const data = await response.json();
+      const data = await authApi.login({ email, password });
 
       // Token unificado: qm_token es el estándar usado en toda la app
       localStorage.setItem("qm_token", data.access_token);
