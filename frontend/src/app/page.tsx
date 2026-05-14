@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { BrainCircuit, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import Link from "next/link";
 
 /**
  * Componente principal de la página de Login.
@@ -11,7 +13,8 @@ import { BrainCircuit, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
  */
 export default function LoginPage() {
   const router = useRouter();
-  
+  const { login: performLogin } = useAuth();
+
   // Estados para manejar los campos del formulario y el feedback al usuario
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,12 +30,8 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const data = await authApi.login({ email, password });
-
-      // Token unificado: qm_token es el estándar usado en toda la app
-      localStorage.setItem("qm_token", data.access_token);
-      localStorage.setItem("qm_user", JSON.stringify(data.user));
-
+      // Usamos el método login del contexto para asegurar que el estado global se actualice
+      await performLogin(email, password);
       router.push("/dashboard");
     } catch (err: any) {
       setError(err.message || "Ocurrió un error al intentar iniciar sesión.");
@@ -108,10 +107,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1">
-              <div className="flex items-center justify-between ml-1 mb-1">
-                <label className="text-sm font-bold text-gray-700">Contraseña</label>
-                <a href="#" className="text-xs font-bold text-purple-600 hover:text-purple-700">¿Olvidaste tu contraseña?</a>
-              </div>
+              <label className="text-sm font-bold text-gray-700 ml-1">Contraseña</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                   <Lock size={18} />
@@ -139,7 +135,10 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-8 text-center text-sm font-medium text-gray-500">
-            ¿No tienes cuenta? <a href="#" className="font-bold text-purple-600 hover:text-purple-700 hover:underline">Solicita acceso aquí</a>
+            ¿No tienes cuenta?{" "}
+            <Link href="/register" className="font-bold text-purple-600 hover:text-purple-700 hover:underline">
+              Regístrate aquí
+            </Link>
           </p>
         </div>
       </div>
