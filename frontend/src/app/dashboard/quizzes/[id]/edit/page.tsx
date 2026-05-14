@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { QuizEditor } from "../../new/page";
+import { QuizEditor } from "@/components/editor/QuizEditor";
 
 /**
  * Página de edición de quiz.
