@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, use } from "react";
 import { Plus, GripVertical, Settings, Save, Play, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function QuizBuilderPage({ params }: { params: { id: string } }) {
+export default function QuizBuilderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [activeTab, setActiveTab] = useState("editor");
 
   return (
@@ -14,7 +15,7 @@ export default function QuizBuilderPage({ params }: { params: { id: string } }) 
         <div>
           <div className="flex items-center gap-3 mb-1">
             <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-wider rounded-lg">Borrador</span>
-            <span className="text-sm font-medium text-gray-400">ID: {params.id}</span>
+            <span className="text-sm font-medium text-gray-400">ID: {id}</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 focus:outline-none focus:border-b-2 focus:border-purple-500 hover:bg-gray-50 px-2 -ml-2 rounded-lg transition-colors cursor-text" contentEditable suppressContentEditableWarning>
             Nombre del Quiz Interactivo
